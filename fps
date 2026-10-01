@@ -1,0 +1,192 @@
+--// Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+--// สร้าง ScreenGui หลัก
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "FpsSimulatorGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+--// สร้าง UI สี่เหลี่ยมหลัก (ขยับได้)
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 300, 0, 320)
+mainFrame.Position = UDim2.new(0.5, -150, 0.5, -160)
+mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = screenGui
+
+--// มุมโค้งมนให้สวยงาม
+local uiCorner = Instance.new("UICorner")
+uiCorner.CornerRadius = UDim.new(0, 10)
+uiCorner.Parent = mainFrame
+
+--// แถบหัวข้อ (สำหรับลากขยับ UI)
+local titleBar = Instance.new("TextButton")
+titleBar.Name = "TitleBar"
+titleBar.Size = UDim2.new(1, 0, 0, 40)
+titleBar.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+titleBar.Text = " FPS Simulator"
+titleBar.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleBar.TextSize = 16
+titleBar.Font = Enum.Font.SourceSansBold
+titleBar.TextXAlignment = Enum.TextXAlignment.Left
+titleBar.Parent = mainFrame
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 10)
+titleCorner.Parent = titleBar
+
+--// ทำให้ Frame ขยับได้ (Draggable)
+local dragging, dragInput, dragStart, startPos
+
+titleBar.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = mainFrame.Position
+		
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+		local delta = input.Position - dragStart
+		mainFrame.Position = UDim2.new(
+			startPos.X.Scale, 
+			startPos.X.Offset + delta.X, 
+			startPos.Y.Scale, 
+			startPos.Y.Offset + delta.Y
+		)
+	end
+end)
+
+--// ข้อความแสดงสถานะ FPS ปัจจุบัน
+local fpsLabel = Instance.new("TextLabel")
+fpsLabel.Size = UDim2.new(1, -20, 0, 30)
+fpsLabel.Position = UDim2.new(0, 10, 0, 50)
+fpsLabel.BackgroundTransparency = 1
+fpsLabel.Text = "เลือก FPS ที่ต้องการทดลอง:"
+fpsLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+fpsLabel.TextSize = 14
+fpsLabel.Font = Enum.Font.SourceSans
+fpsLabel.TextXAlignment = Enum.TextXAlignment.Left
+fpsLabel.Parent = mainFrame
+
+--// สร้างปุ่มเลือก FPS (60, 120, 144, 240)
+local fpsOptions = {60, 120, 144, 240}
+local selectedFps = 60
+local fpsButtons = {}
+
+local buttonContainer = Instance.new("Frame")
+buttonContainer.Size = UDim2.new(1, -20, 0, 90)
+buttonContainer.Position = UDim2.new(0, 10, 0, 85)
+buttonContainer.BackgroundTransparency = 1
+buttonContainer.Parent = mainFrame
+
+local gridLayout = Instance.new("UIGridLayout")
+gridLayout.CellSize = UDim2.new(0, 130, 0, 35)
+gridLayout.CellPadding = UDim2.new(0, 10, 0, 10)
+gridLayout.Parent = buttonContainer
+
+for _, fps in ipairs(fpsOptions) do
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(0, 0, 0, 0)
+	btn.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
+	btn.Text = fps .. " FPS"
+	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	btn.TextSize = 16
+	btn.Font = Enum.Font.SourceSansBold
+	btn.Parent = buttonContainer
+	
+	local btnCorner = Instance.new("UICorner")
+	btnCorner.CornerRadius = UDim.new(0, 6)
+	btnCorner.Parent = btn
+	
+	fpsButtons[fps] = btn
+	
+	btn.MouseButton1Click:Connect(function()
+		selectedFps = fps
+		-- รีเซ็ตสีปุ่มทั้งหมด
+		for f, b in pairs(fpsButtons) do
+			b.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
+		end
+		-- เปลี่ยนสีปุ่มที่เลือก
+		btn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+	end)
+end
+
+-- ตั้งค่าปุ่มแรก (60 FPS) ให้เป็นสีเริ่มต้น
+fpsButtons[60].BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+
+--// ปุ่ม "เริ่ม FPS ทดลอง"
+local startButton = Instance.new("TextButton")
+startButton.Size = UDim2.new(1, -20, 0, 45)
+startButton.Position = UDim2.new(0, 10, 0, 195)
+startButton.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
+startButton.Text = "เริ่ม FPS ทดลอง"
+startButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+startButton.TextSize = 18
+startButton.Font = Enum.Font.SourceSansBold
+startButton.Parent = mainFrame
+
+local startCorner = Instance.new("UICorner")
+startCorner.CornerRadius = UDim.new(0, 8)
+startCorner.Parent = startButton
+
+--// ข้อความแสดงสถานะการทำงานจริง
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Size = UDim2.new(1, -20, 0, 40)
+statusLabel.Position = UDim2.new(0, 10, 0, 250)
+statusLabel.BackgroundTransparency = 1
+statusLabel.Text = "สถานะ: ยังไม่เริ่มทดลอง (FPS ปกติ)"
+statusLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+statusLabel.TextSize = 13
+statusLabel.Font = Enum.Font.SourceSansItalic
+statusLabel.Parent = mainFrame
+
+--// ระบบจำลอง FPS (Fps Limiter / Simulator)
+local isTesting = false
+local targetFps = 60
+
+startButton.MouseButton1Click:Connect(function()
+	isTesting = not isTesting
+	if isTesting then
+		targetFps = selectedFps
+		startButton.Text = "หยุดทดลอง FPS"
+		startButton.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
+		statusLabel.Text = "สถานะ: กำลังจำลองที่ " .. targetFps .. " FPS"
+		statusLabel.TextColor3 = Color3.fromRGB(46, 204, 113)
+	else
+		startButton.Text = "เริ่ม FPS ทดลอง"
+		startButton.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
+		statusLabel.Text = "สถานะ: ปิดการทดลอง (FPS ปกติ)"
+		statusLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+	end
+end)
+
+--// ลูปจำกัดความเร็วเฟรมเรตตามที่เลือกเมื่อเปิดใช้งาน
+local lastTime = tick()
+RunService.RenderStepped:Connect(function()
+	if isTesting then
+		local interval = 1 / targetFps
+		local currentTime = tick()
+		local elapsed = currentTime - lastTime
+		
+		if elapsed < interval then
+			-- หน่วงเวลาเพื่อให้ FPS วิ่งตรงตามค่าจำลองที่เลือก
+			task.wait(interval - elapsed)
+		end
+		lastTime = tick()
+	end
+end)
